@@ -4,15 +4,15 @@ use yew::events::{Event, FocusEvent, KeyboardEvent};
 use yew::prelude::*;
 use yew_autoprops::autoprops;
 
-use crate::components::value::ValueView;
+use crate::components::value::{ValueInput, ValueView};
 use crate::hooks::use_bool_toggle::use_bool_toggle;
-use crate::state::{Page as PageItem, PageName, ValueName};
+use crate::state::{Page, PageName, ValueName};
 
 #[autoprops]
-#[function_component(Page)]
+#[function_component(PageView)]
 pub fn page(
     page_name: &PageName,
-    page: &PageItem,
+    page: &Page,
     on_page_remove: Callback<PageName>,
     on_edit_template: Callback<(PageName, String)>,
     on_add_value: Callback<(PageName, ValueName, Value)>,
@@ -65,12 +65,16 @@ pub fn page(
                 <TemplateEditView page_name={page_name.clone()} page={page.clone()} on_edit={on_edit_t} editing={is_editing} />
             </div>
             <div class="values">
+                    <ValueInput
+                        page_name={page_name.clone()}
+                        on_add={&on_add_value}
+                    />
                     <ul class="values">
                         { for page.values.iter().map(|(value_name, value)|
                             html! {
                                 <ValueView
                                     page_name={page_name.clone()}
-                                    name={value_name.clone()}
+                                    value_name={value_name.clone()}
                                     value={value.clone()}
                                     on_edit_value={&on_edit_value}
                                     on_remove_value={&on_remove_value}
@@ -78,6 +82,7 @@ pub fn page(
                         }) }
                     </ul>
             </div>
+
             <RenderedPageView page_name={page_name.clone()} page={page.clone()}/>
         </li>
     }
@@ -87,7 +92,7 @@ pub fn page(
 #[function_component(TemplateEditView)]
 pub fn page_edit(
     page_name: &PageName,
-    page: &PageItem,
+    page: &Page,
     on_edit: Callback<(PageName, String)>,
     editing: bool,
 ) -> Html {
@@ -144,7 +149,7 @@ pub fn page_edit(
 
 #[autoprops]
 #[function_component(RenderedPageView)]
-pub fn page(page_name: &PageName, page: &PageItem) -> Html {
+pub fn page(page_name: &PageName, page: &Page) -> Html {
     use tera::*;
 
     let mut tera = Tera::default();

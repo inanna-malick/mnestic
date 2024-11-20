@@ -3,23 +3,20 @@ use serde_json::Value;
 use web_sys::{HtmlInputElement, MouseEvent};
 use yew::events::{Event, FocusEvent, KeyboardEvent};
 use yew::prelude::*;
+use yew_autoprops::autoprops;
 
 use crate::hooks::use_bool_toggle::use_bool_toggle;
 use crate::state::{PageName, ValueName};
 
-#[derive(PartialEq, Properties, Clone)]
-pub struct ValueProps {
-    pub page_name: PageName,
-    pub name: ValueName,
-    pub value: serde_json::Value,
-    pub on_edit_value: Callback<(PageName, ValueName, Value)>,
-    pub on_remove_value: Callback<(PageName, ValueName)>,
-}
-
+#[autoprops]
 #[function_component(ValueView)]
-pub fn page(props: &ValueProps) -> Html {
-    let page_name = &props.page_name;
-    let value_name = &props.name;
+pub fn value(
+    page_name: &PageName,
+    value_name: &ValueName,
+    value: &serde_json::Value,
+    on_edit_value: Callback<(PageName, ValueName, Value)>,
+    on_remove_value: Callback<(PageName, ValueName)>,
+) -> Html {
     let mut class = Classes::from("todo");
 
     // We use the `use_bool_toggle` hook and set the default value to `false`
@@ -39,7 +36,7 @@ pub fn page(props: &ValueProps) -> Html {
     }
 
     let on_edit = {
-        let on_edit = props.on_edit_value.clone();
+        let on_edit = on_edit_value.clone();
         let edit_toggle = edit_toggle.clone();
         move |value| {
             edit_toggle.clone().toggle();
@@ -48,7 +45,7 @@ pub fn page(props: &ValueProps) -> Html {
     };
 
     let on_remove_value = {
-        let on_remove_value = props.on_remove_value.clone();
+        let on_remove_value = on_remove_value.clone();
         let name = page_name.clone();
         let value_name = value_name.clone();
         move |_| on_remove_value.emit((name.clone(), value_name.clone()))
@@ -62,38 +59,33 @@ pub fn page(props: &ValueProps) -> Html {
             </div>
             <div class="view">
                 <label ondblclick={move |_| edit_toggle.clone().toggle()}>
-                    { serde_json::to_string_pretty(&props.value).unwrap() }
+                    { serde_json::to_string_pretty(&value).unwrap() }
                 </label>
             </div>
-            <ValueEditView page_name={page_name.clone()} value_name={value_name.clone()} value={props.value.clone()} on_edit={on_edit} editing={is_editing} />
+            <ValueEditView page_name={page_name.clone()} value_name={value_name.clone()} value={value.clone()} on_edit={on_edit} editing={is_editing} />
         </li>
     }
 }
 
-#[derive(PartialEq, Properties, Clone)]
-pub struct ValueEditProps {
-    pub page_name: PageName,
-    pub value_name: ValueName,
-    pub value: Value,
-    pub on_edit: Callback<(PageName, ValueName, Value)>,
-    pub editing: bool,
-}
-
+#[autoprops]
 #[function_component(ValueEditView)]
-pub fn page_edit(props: &ValueEditProps) -> Html {
-    if props.editing {
-        let page_name = &props.page_name;
-        let value_name = &props.value_name;
-
+pub fn value_edit(
+    page_name: &PageName,
+    value_name: &ValueName,
+    value: &Value,
+    on_edit: Callback<(PageName, ValueName, Value)>,
+    editing: bool,
+) -> Html {
+    if editing {
         let target_input_value = |e: &Event| {
             let input: HtmlInputElement = e.target_unchecked_into();
             input.value()
         };
 
         let onblur = {
-            let page_name = props.page_name.clone();
-            let value_name = props.value_name.clone();
-            let edit = props.on_edit.clone();
+            let page_name = page_name.clone();
+            let value_name = value_name.clone();
+            let edit = on_edit.clone();
 
             move |e: FocusEvent| {
                 let value = target_input_value(&e);
@@ -107,7 +99,7 @@ pub fn page_edit(props: &ValueEditProps) -> Html {
         let onkeypress = {
             let page_name = page_name.clone();
             let value_name = value_name.clone();
-            let edit = props.on_edit.clone();
+            let edit = on_edit.clone();
 
             move |e: KeyboardEvent| {
                 if e.key() == "Enter" {
@@ -130,7 +122,7 @@ pub fn page_edit(props: &ValueEditProps) -> Html {
             <input
                 class="edit"
                 type="text"
-                value={ serde_json::to_string_pretty(&props.value).unwrap() }
+                value={ serde_json::to_string_pretty(&value).unwrap() }
                 {onmouseover}
                 {onblur}
                 {onkeypress}
@@ -138,5 +130,35 @@ pub fn page_edit(props: &ValueEditProps) -> Html {
         }
     } else {
         html! { <input type="hidden" /> }
+    }
+}
+
+#[autoprops]
+#[function_component(ValueInput)]
+pub fn value_creation(
+    page_name: &PageName,
+    on_add: Callback<(PageName, ValueName, Value)>,
+) -> Html {
+    let page_name = page_name.clone();
+    let onkeypress = {
+        move |e: KeyboardEvent| {
+            if e.key() == "Enter" {
+                let input: HtmlInputElement = e.target_unchecked_into();
+                let value_name = input.value();
+
+                input.set_value("");
+
+                on_add.emit((page_name.clone(), value_name.into(), Value::Null));
+            }
+        }
+    };
+
+    html! {
+        <input
+            type="text"
+            class="new-value-name"
+            placeholder=""
+            {onkeypress}
+        />
     }
 }

@@ -2,8 +2,6 @@ use std::collections::HashMap;
 use std::rc::Rc;
 
 use serde::{Deserialize, Serialize};
-use strum_macros::{Display, EnumIter};
-use yew::html::IntoPropValue;
 use yew::prelude::*;
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash)]

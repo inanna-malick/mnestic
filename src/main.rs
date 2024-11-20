@@ -2,7 +2,6 @@ use std::collections::HashMap;
 
 use gloo::storage::{LocalStorage, Storage};
 use state::{Action, Page, PageName, State};
-use strum::IntoEnumIterator;
 use yew::prelude::*;
 
 mod components;
@@ -10,7 +9,7 @@ mod hooks;
 mod state;
 
 use components::header_input::HeaderInput;
-use components::page::Page as PageComponent;
+use components::page::PageView;
 
 const KEY: &str = "yew.functiontodomvc.self";
 
@@ -83,7 +82,7 @@ fn app() -> Html {
                     <ul class="todo-list">
                         { for state.pages.iter().map(|(page_name, page)|
                             html! {
-                                <PageComponent
+                                <PageView
                                     page_name={page_name.clone()}
                                     page={page.clone()}
                                     on_page_remove={&on_page_remove}
