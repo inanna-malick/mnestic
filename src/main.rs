@@ -1,5 +1,7 @@
+use std::collections::HashMap;
+
 use gloo::storage::{LocalStorage, Storage};
-use state::{Action, Filter, State};
+use state::{Action, Page, PageName, State};
 use strum::IntoEnumIterator;
 use yew::prelude::*;
 
@@ -7,26 +9,22 @@ mod components;
 mod hooks;
 mod state;
 
-use components::entry::Entry as EntryItem;
-use components::filter::Filter as FilterItem;
 use components::header_input::HeaderInput;
-use components::info_footer::InfoFooter;
+use components::page::Page as PageComponent;
 
 const KEY: &str = "yew.functiontodomvc.self";
 
 #[function_component(App)]
 fn app() -> Html {
     let state = use_reducer(|| State {
-        entries: LocalStorage::get(KEY).unwrap_or_else(|_| vec![]),
-        filter: Filter::All, // TODO: get from uri
+        pages: LocalStorage::get(KEY).unwrap_or_else(|_| HashMap::new()),
     });
 
     // Effect
     use_effect_with(state.clone(), |state| {
-        LocalStorage::set(KEY, &state.clone().entries).expect("failed to set");
+        LocalStorage::set(KEY, &state.clone().pages).expect("failed to set");
     });
 
-    // Callbacks
     fn make_callback<E, F>(state: &UseReducerHandle<State>, f: F) -> Callback<E>
     where
         F: Fn(E) -> Action + 'static,
@@ -35,82 +33,69 @@ fn app() -> Html {
         Callback::from(move |e: E| state.dispatch(f(e)))
     }
 
-    let onremove = make_callback(&state, Action::Remove);
-    let ontoggle = make_callback(&state, Action::Toggle);
-    let ontoggle_all = make_callback(&state, |_| Action::ToggleAll);
-    let onclear_completed = make_callback(&state, |_| Action::ClearCompleted);
-    let onedit = make_callback(&state, Action::Edit);
-    let onadd = make_callback(&state, Action::AddTemplate);
-    let onset_filter = make_callback(&state, Action::SetFilter);
+    let on_add = make_callback(&state, |(page_name, page): (PageName, Page)| {
+        Action::AddPage { page_name, page }
+    });
 
-    // Helpers
-    let completed = state
-        .entries
-        .iter()
-        .filter(|entry| Filter::Completed.fits(entry))
-        .count();
+    let on_page_remove = make_callback(&state, |page_name: PageName| Action::RemovePage {
+        page_name,
+    });
 
-    let is_all_completed = state
-        .entries
-        .iter()
-        .all(|e| state.filter.fits(e) & e.completed);
+    let on_edit_template = make_callback(&state, |(page_name, template): (PageName, String)| {
+        Action::EditTemplate {
+            page_name,
+            template,
+        }
+    });
 
-    let total = state.entries.len();
+    let on_add_value = make_callback(&state, |(page_name, value_name, value)| Action::AddValue {
+        page_name,
+        value_name,
+        value,
+    });
 
-    let hidden_class = if state.entries.is_empty() {
-        "hidden"
-    } else {
-        ""
-    };
+    let on_edit_value = make_callback(&state, |(page_name, value_name, value)| Action::EditValue {
+        page_name,
+        value_name,
+        value,
+    });
+
+    let on_remove_value = make_callback(&state, |(page_name, value_name)| Action::RemoveValue {
+        page_name,
+        value_name,
+    });
+
+    // let hidden_class = if state.entries.is_empty() {
+    //     "hidden"
+    // } else {
+    //     ""
+    // };
 
     html! {
         <div class="todomvc-wrapper">
-            <section class="todoapp">
+            <section>
                 <header class="header">
-                    <h1>{ "todos" }</h1>
-                    <HeaderInput {onadd} />
+                    <h1>{ "Pages" }</h1>
+                    <HeaderInput {on_add} />
                 </header>
-                <section class={classes!("main", hidden_class)}>
-                    <input
-                        type="checkbox"
-                        class="toggle-all"
-                        id="toggle-all"
-                        checked={is_all_completed}
-                        onclick={ontoggle_all}
-                    />
+                <section>
                     <label for="toggle-all" />
                     <ul class="todo-list">
-                        { for state.entries.iter().filter(|e| state.filter.fits(e)).cloned().map(|entry|
+                        { for state.pages.iter().map(|(page_name, page)|
                             html! {
-                                <EntryItem {entry}
-                                    ontoggle={&ontoggle}
-                                    onremove={&onremove}
-                                    onedit={&onedit}
+                                <PageComponent
+                                    page_name={page_name.clone()}
+                                    page={page.clone()}
+                                    on_page_remove={&on_page_remove}
+                                    on_edit_template={&on_edit_template}
+                                    on_add_value={&on_add_value}
+                                    on_edit_value={&on_edit_value}
+                                    on_remove_value={&on_remove_value}
                                 />
                         }) }
                     </ul>
                 </section>
-                <footer class={classes!("footer", hidden_class)}>
-                    <span class="todo-count">
-                        <strong>{ total }</strong>
-                        { " item(s) left" }
-                    </span>
-                    <ul class="filters">
-                        { for Filter::iter().map(|filter| {
-                            html! {
-                                <FilterItem {filter}
-                                    selected={state.filter == filter}
-                                    onset_filter={&onset_filter}
-                                />
-                            }
-                        }) }
-                    </ul>
-                    <button class="clear-completed" onclick={onclear_completed}>
-                        { format!("Clear completed ({completed})") }
-                    </button>
-                </footer>
             </section>
-            <InfoFooter />
         </div>
     }
 }

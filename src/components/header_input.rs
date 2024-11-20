@@ -1,32 +1,43 @@
+use std::collections::HashMap;
+
+use serde_json::Value;
 use web_sys::HtmlInputElement;
 use yew::events::KeyboardEvent;
 use yew::prelude::*;
+use yew_autoprops::autoprops;
 
-#[derive(PartialEq, Properties, Clone)]
-pub struct HeaderInputProps {
-    pub onadd: Callback<String>,
-}
+use crate::state::{Page, PageName};
 
+#[autoprops]
 #[function_component(HeaderInput)]
-pub fn header_input(props: &HeaderInputProps) -> Html {
+pub fn header_input(on_add: Callback<(PageName, Page)>) -> Html {
     let onkeypress = {
-        let onadd = props.onadd.clone();
-
         move |e: KeyboardEvent| {
             if e.key() == "Enter" {
                 let input: HtmlInputElement = e.target_unchecked_into();
-                let value = input.value();
+                let page_name = input.value();
 
                 input.set_value("");
-                onadd.emit(value);
+
+                let mut initial_values = HashMap::new();
+                initial_values.insert("name".into(), Value::String("Inanna".to_string()));
+
+                on_add.emit((
+                    page_name.into(),
+                    Page {
+                        template: "Hello {{ name }}".to_string(),
+                        values: initial_values,
+                    },
+                ));
             }
         }
     };
 
     html! {
         <input
-            class="new-todo"
-            placeholder="What needs to be done?"
+            type="text"
+            class="new-page-name"
+            placeholder=""
             {onkeypress}
         />
     }
