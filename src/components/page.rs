@@ -19,7 +19,7 @@ pub fn page(
     on_edit_value: Callback<(PageName, ValueName, Value)>,
     on_remove_value: Callback<(PageName, ValueName)>,
 ) -> Html {
-    let mut class = Classes::from("todo");
+    let mut class = classes!("row");
 
     // We use the `use_bool_toggle` hook and set the default value to `false`
     // as the default we are not editing the entry. When we want to edit the
@@ -52,24 +52,30 @@ pub fn page(
         }
     };
 
+    
+
     html! {
-        <li {class}>
-            <div class="pagename">
+        <div {class}>
+              <div class={classes!("col", "s12", "teal", "lighten-5")} >
                 { page_name.clone().0 }
-                <button onclick={on_page_remove}>{"delete page"}</button>
+                <button class={classes!("btn", "waves-effect", "waves-light")} onclick={on_page_remove}>{"delete page"}</button>
             </div>
-            <div class="template">
-                <label ondblclick={move |_| edit_toggle.clone().toggle()}>
+            <div class={classes!("col", "s4", "teal", "lighten-5")} >
+                <div ondblclick={move |_| edit_toggle.clone().toggle()}>
                     { &page.template }
-                </label>
+                </div>
                 <TemplateEditView page_name={page_name.clone()} page={page.clone()} on_edit={on_edit_t} editing={is_editing} />
             </div>
-            <div class="values">
+            <div class={classes!("col", "s4", "teal", "lighten-5")} >
                     <ValueInput
                         page_name={page_name.clone()}
                         on_add={&on_add_value}
                     />
-                    <ul class="values">
+                    <br/>
+
+                    <div class="divider"></div>
+                    
+                    <div class="section">
                         { for page.values.iter().map(|(value_name, value)|
                             html! {
                                 <ValueView
@@ -80,11 +86,13 @@ pub fn page(
                                     on_remove_value={&on_remove_value}
                                 />
                         }) }
-                    </ul>
+                    </div>
             </div>
 
-            <RenderedPageView page_name={page_name.clone()} page={page.clone()}/>
-        </li>
+            <div class={classes!("col", "s4", "teal", "lighten-5")} >
+                <RenderedPageView page_name={page_name.clone()} page={page.clone()}/>
+            </div>
+        </div>
     }
 }
 
@@ -132,15 +140,23 @@ pub fn page_edit(
                 .unwrap_or_default();
         };
 
+        let id = format!("{}-edit-template", page_name.0);
+
         html! {
-            <input
-                class="edit"
-                type="text"
-                value={page.template.clone()}
-                {onmouseover}
-                {onblur}
-                {onkeypress}
-            />
+            <div>
+                <i class="material-icons prefix">{"mode_edit"}</i>
+                <textarea
+                    id={id.clone()}
+                    class="materialize-textarea"
+                    {onmouseover}
+                    {onblur}
+                    {onkeypress}
+                    value={page.template.clone()}
+                >
+                    
+                </textarea>
+                <label for={id}>{"Template Contents"}</label>
+            </div>
         }
     } else {
         html! { <input type="hidden" /> }

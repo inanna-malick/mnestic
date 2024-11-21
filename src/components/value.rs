@@ -1,4 +1,3 @@
-// use _ValueProps::on_edit_template;
 use serde_json::Value;
 use web_sys::{HtmlInputElement, MouseEvent};
 use yew::events::{Event, FocusEvent, KeyboardEvent};
@@ -17,7 +16,7 @@ pub fn value(
     on_edit_value: Callback<(PageName, ValueName, Value)>,
     on_remove_value: Callback<(PageName, ValueName)>,
 ) -> Html {
-    let mut class = Classes::from("todo");
+    let mut class = classes!("card", "blue-grey", "darken-1");
 
     // We use the `use_bool_toggle` hook and set the default value to `false`
     // as the default we are not editing the entry. When we want to edit the
@@ -52,18 +51,24 @@ pub fn value(
     };
 
     html! {
-        <li {class}>
-            <div class="valuename">
-                { value_name.clone().0 }
-                <button onclick={on_remove_value}>{"delete value"}</button>
-            </div>
-            <div class="view">
-                <label ondblclick={move |_| edit_toggle.clone().toggle()}>
-                    { serde_json::to_string_pretty(&value).unwrap() }
-                </label>
+      <div class="">
+        <div class="card-content">
+          <span class="card-title">{value_name.0.clone()}</span>
+          <p>
+            <div ondblclick={move |_| edit_toggle.clone().toggle()}>
+                { serde_json::to_string_pretty(&value).unwrap() }
             </div>
             <ValueEditView page_name={page_name.clone()} value_name={value_name.clone()} value={value.clone()} on_edit={on_edit} editing={is_editing} />
-        </li>
+          </p>
+        </div>
+        <div class="card-action">
+            <button class={classes!("btn", "btn-small", "waves-effect", "waves-light")} onclick={on_remove_value}>
+            <i class="material-icons left">{"cancel"}</i>
+            </button>
+        </div>
+      </div>
+
+
     }
 }
 
@@ -118,15 +123,23 @@ pub fn value_edit(
                 .unwrap_or_default();
         };
 
+        let id = format!("{}-edit-template", page_name.0);
+
         html! {
-            <input
-                class="edit"
-                type="text"
-                value={ serde_json::to_string_pretty(&value).unwrap() }
-                {onmouseover}
-                {onblur}
-                {onkeypress}
-            />
+            <div>
+                <i class="material-icons prefix">{"mode_edit"}</i>
+                <textarea
+                    id={id.clone()}
+                    class="materialize-textarea"
+                    {onmouseover}
+                    {onblur}
+                    {onkeypress}
+                    value={ serde_json::to_string_pretty(&value).unwrap() }
+                >
+                    
+                </textarea>
+                <label for={id}>{"Template Contents"}</label>
+            </div>
         }
     } else {
         html! { <input type="hidden" /> }
@@ -140,7 +153,9 @@ pub fn value_creation(
     on_add: Callback<(PageName, ValueName, Value)>,
 ) -> Html {
     let page_name = page_name.clone();
+
     let onkeypress = {
+        let page_name = page_name.clone();
         move |e: KeyboardEvent| {
             if e.key() == "Enter" {
                 let input: HtmlInputElement = e.target_unchecked_into();
@@ -153,12 +168,21 @@ pub fn value_creation(
         }
     };
 
+    let id = format!("{}_new_value_name", page_name.0);
+
     html! {
-        <input
-            type="text"
-            class="new-value-name"
-            placeholder=""
-            {onkeypress}
-        />
+        <div class="input-field">
+            <input
+                id={id.clone()}
+                type="text"
+                class="validate"
+                placeholder=""
+                {onkeypress}
+            />
+            <label for={id}>{"New Value Name"}</label>
+
+
+
+        </div>
     }
 }

@@ -64,37 +64,28 @@ fn app() -> Html {
         value_name,
     });
 
-    // let hidden_class = if state.entries.is_empty() {
-    //     "hidden"
-    // } else {
-    //     ""
-    // };
-
     html! {
-        <div class="todomvc-wrapper">
-            <section>
-                <header class="header">
-                    <h1>{ "Pages" }</h1>
+        <div class="container">
+            <h1>{ "Pages" }</h1>
+            <div class="row">
+                <div class="col s12">
                     <HeaderInput {on_add} />
-                </header>
-                <section>
-                    <label for="toggle-all" />
-                    <ul class="todo-list">
-                        { for state.pages.iter().map(|(page_name, page)|
-                            html! {
-                                <PageView
-                                    page_name={page_name.clone()}
-                                    page={page.clone()}
-                                    on_page_remove={&on_page_remove}
-                                    on_edit_template={&on_edit_template}
-                                    on_add_value={&on_add_value}
-                                    on_edit_value={&on_edit_value}
-                                    on_remove_value={&on_remove_value}
-                                />
-                        }) }
-                    </ul>
-                </section>
-            </section>
+                </div>
+                <label for="toggle-all" />
+            </div>
+
+                { for state.pages.iter().map(|(page_name, page)|
+                    html! {
+                        <PageView
+                            page_name={page_name.clone()}
+                            page={page.clone()}
+                            on_page_remove={&on_page_remove}
+                            on_edit_template={&on_edit_template}
+                            on_add_value={&on_add_value}
+                            on_edit_value={&on_edit_value}
+                            on_remove_value={&on_remove_value}
+                        />
+                }) }
         </div>
     }
 }
