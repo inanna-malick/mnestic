@@ -1,5 +1,9 @@
+use std::rc::Rc;
+
 use serde_json::Value;
-use web_sys::{HtmlInputElement, MouseEvent};
+use tera::Tera;
+use web_sys::wasm_bindgen::JsValue;
+use web_sys::{console, HtmlInputElement, MouseEvent};
 use yew::events::{Event, FocusEvent, KeyboardEvent};
 use yew::prelude::*;
 use yew_autoprops::autoprops;
@@ -7,6 +11,7 @@ use yew_autoprops::autoprops;
 use crate::components::value::{ValueInput, ValueView};
 use crate::hooks::use_bool_toggle::use_bool_toggle;
 use crate::state::{Page, PageName, ValueName};
+use crate::TeraWrapper;
 
 #[autoprops]
 #[function_component(PageView)]
@@ -18,8 +23,9 @@ pub fn page(
     on_add_value: Callback<(PageName, ValueName, Value)>,
     on_edit_value: Callback<(PageName, ValueName, Value)>,
     on_remove_value: Callback<(PageName, ValueName)>,
+    tera: Rc<Result<TeraWrapper, String>>,
 ) -> Html {
-    let mut class = classes!("row");
+    let mut class = classes!("row", "teal", "lighten-5");
 
     // We use the `use_bool_toggle` hook and set the default value to `false`
     // as the default we are not editing the entry. When we want to edit the
@@ -52,29 +58,32 @@ pub fn page(
         }
     };
 
-    
-
     html! {
         <div {class}>
-              <div class={classes!("col", "s12", "teal", "lighten-5")} >
+              <div class={classes!("col", "s12")} >
                 { page_name.clone().0 }
                 <button class={classes!("btn", "waves-effect", "waves-light")} onclick={on_page_remove}>{"delete page"}</button>
             </div>
-            <div class={classes!("col", "s4", "teal", "lighten-5")} >
-                <div ondblclick={move |_| edit_toggle.clone().toggle()}>
+            <br/>
+            <div class="divider"></div>
+            <br/>
+            <div class={classes!("col", "s4")} >
+                <div style="white-space: pre-wrap"  ondblclick={move |_| edit_toggle.clone().toggle()}>
                     { &page.template }
                 </div>
+                <br/>
+                <div class="divider"></div>
+                <br/>
                 <TemplateEditView page_name={page_name.clone()} page={page.clone()} on_edit={on_edit_t} editing={is_editing} />
             </div>
-            <div class={classes!("col", "s4", "teal", "lighten-5")} >
+            <div class={classes!("col", "s2")} >
                     <ValueInput
                         page_name={page_name.clone()}
                         on_add={&on_add_value}
                     />
                     <br/>
 
-                    <div class="divider"></div>
-                    
+
                     <div class="section">
                         { for page.values.iter().map(|(value_name, value)|
                             html! {
@@ -89,8 +98,8 @@ pub fn page(
                     </div>
             </div>
 
-            <div class={classes!("col", "s4", "teal", "lighten-5")} >
-                <RenderedPageView page_name={page_name.clone()} page={page.clone()}/>
+            <div class={classes!("col", "s6")} style={"height:100%;"}  >
+                <RenderedPageView page_name={page_name.clone()} page={page.clone()} tera={tera.clone()}/>
             </div>
         </div>
     }
@@ -122,6 +131,8 @@ pub fn page_edit(
             }
         };
 
+
+
         let onkeypress = {
             let edit = on_edit.clone();
             let name = name.clone();
@@ -135,10 +146,30 @@ pub fn page_edit(
         };
 
         let onmouseover = |e: MouseEvent| {
-            e.target_unchecked_into::<HtmlInputElement>()
-                .focus()
+            let x = e.target_unchecked_into::<HtmlInputElement>();
+            x.focus()
                 .unwrap_or_default();
         };
+
+
+        // todo fix this later i guess
+        // let onkeyup = |e: KeyboardEvent| {
+        //     console::log_1(&JsValue::from_str("KEYUP"));
+        //     let x = e.target_unchecked_into::<HtmlInputElement>();
+        //     if (x.scroll_height() > x.client_height()) {
+        //         let style = x.style();
+
+        //         style.set_property("height", &format!("{} + px", x.scroll_height())).unwrap();
+        //     }
+        // };
+
+
+        // textarea.noscrollbars {
+        // overflow: hidden;
+        // width: 300px;
+        // height: 100px;
+        // }
+
 
         let id = format!("{}-edit-template", page_name.0);
 
@@ -148,12 +179,14 @@ pub fn page_edit(
                 <textarea
                     id={id.clone()}
                     class="materialize-textarea"
+                    rows={"10"}
                     {onmouseover}
-                    {onblur}
+                    // {onkeyup}
+                    // {onblur}
                     {onkeypress}
                     value={page.template.clone()}
                 >
-                    
+
                 </textarea>
                 <label for={id}>{"Template Contents"}</label>
             </div>
@@ -165,15 +198,15 @@ pub fn page_edit(
 
 #[autoprops]
 #[function_component(RenderedPageView)]
-pub fn page(page_name: &PageName, page: &Page) -> Html {
-    use tera::*;
-
-    let mut tera = Tera::default();
-    if let Err(e) = tera.add_raw_template(&page_name.0, &page.template) {
-        return html! {
-            <div>{format!("template error: {e:?}")}</div>
-        };
-    }
+pub fn page(page_name: &PageName, page: &Page, tera: Rc<Result<TeraWrapper, String>>) -> Html {
+    let tera = match tera.as_ref() {
+        Ok(t) => t,
+        Err(e) => {
+            return html! {
+                <div>{format!("template error: {e:?}")}</div>
+            };
+        }
+    };
 
     // Prepare the context with some data
     let mut context = tera::Context::new();
@@ -182,10 +215,10 @@ pub fn page(page_name: &PageName, page: &Page) -> Html {
     }
 
     // Render the template with the given context
-    match tera.render(&page_name.0, &context) {
+    match tera.render(&page_name, &context) {
         Ok(rendered) => {
             html! {
-                <iframe srcdoc={rendered}></iframe>
+                <iframe srcdoc={rendered} style={"width:100%;height:100%;"} ></iframe>
             }
         }
         Err(e) => {

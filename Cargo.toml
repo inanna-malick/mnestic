@@ -19,4 +19,5 @@ yew-autoprops = "0.4.1"
 version = "0.3"
 features = [
 	"HtmlInputElement",
+	"CssStyleDeclaration"
 ]

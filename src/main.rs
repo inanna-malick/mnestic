@@ -1,7 +1,9 @@
 use std::collections::HashMap;
+use std::rc::Rc;
 
 use gloo::storage::{LocalStorage, Storage};
 use state::{Action, Page, PageName, State};
+use tera::Tera;
 use yew::prelude::*;
 
 mod components;
@@ -64,6 +66,9 @@ fn app() -> Html {
         value_name,
     });
 
+    let tera: Rc<Result<TeraWrapper, String>> =
+        use_memo(state.pages.clone(), |pages| TeraWrapper::new(pages.clone()));
+
     html! {
         <div class="container">
             <h1>{ "Pages" }</h1>
@@ -84,6 +89,7 @@ fn app() -> Html {
                             on_add_value={&on_add_value}
                             on_edit_value={&on_edit_value}
                             on_remove_value={&on_remove_value}
+                            tera={&tera}
                         />
                 }) }
         </div>
@@ -93,3 +99,40 @@ fn app() -> Html {
 fn main() {
     yew::Renderer::<App>::new().render();
 }
+
+#[derive(Clone, Debug)]
+struct TeraWrapper {
+    source: HashMap<PageName, Page>,
+    compiled: Tera,
+}
+
+impl TeraWrapper {
+    pub fn new(source: HashMap<PageName, Page>) -> Result<Self, String> {
+        let mut tera = Tera::default();
+        match tera.add_raw_templates(
+            source
+                .iter()
+                .map(|(k, v)| (k.0.clone(), v.template.clone())),
+        ) {
+            Ok(()) => Ok(Self {
+                source,
+                compiled: tera,
+            }),
+            Err(e) => Err(e.to_string()),
+        }
+    }
+
+    pub fn render(&self, page_name: &PageName, context: &tera::Context) -> Result<String, String> {
+        self.compiled
+            .render(&page_name.0, context)
+            .map_err(|e| e.to_string())
+    }
+}
+
+impl PartialEq for TeraWrapper {
+    fn eq(&self, other: &Self) -> bool {
+        self.source == other.source
+    }
+}
+
+impl Eq for TeraWrapper {}

@@ -106,6 +106,7 @@ pub fn value_edit(
             let value_name = value_name.clone();
             let edit = on_edit.clone();
 
+            // todo: disallows multiline text
             move |e: KeyboardEvent| {
                 if e.key() == "Enter" {
                     let value = target_input_value(&e);
@@ -136,7 +137,7 @@ pub fn value_edit(
                     {onkeypress}
                     value={ serde_json::to_string_pretty(&value).unwrap() }
                 >
-                    
+
                 </textarea>
                 <label for={id}>{"Template Contents"}</label>
             </div>
