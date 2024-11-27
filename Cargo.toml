@@ -1,23 +1,6 @@
-[package]
-name = "function_todomvc"
-version = "0.1.0"
-authors = ["Drew Hutton <drew.hutton@pm.me>"]
-edition = "2021"
-license = "MIT OR Apache-2.0"
+[workspace]
 
-[dependencies]
-serde = { version = "1.0", features = ["derive"] }
-strum = "0.26"
-strum_macros = "0.26"
-gloo = "0.11"
-yew = { version = "0.21", features = ["csr"] }
-serde_json = "1.0.133"
-tera = "1.20.0"
-yew-autoprops = "0.4.1"
-
-[dependencies.web-sys]
-version = "0.3"
-features = [
-	"HtmlInputElement",
-	"CssStyleDeclaration"
+members = [ "mnemnos-types",
+    "mnemnos-wasm", "mnemnos-wasm-packed",
+    "mnemnos-worker"
 ]

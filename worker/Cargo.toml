@@ -1,0 +1,7 @@
+[workspace]
+
+members = [
+    "mnemnos-types",
+    "mnemnos-wasm",
+    "mnemnos-worker"
+]

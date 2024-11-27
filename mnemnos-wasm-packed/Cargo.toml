@@ -1,0 +1,12 @@
+[package]
+name = "mnemnos-wasm-packed"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+axum  = { version = "0.7", default-features = false }
+phf = {version="0.11.2", features = ["macros"]}
+
+
+[build-dependencies]
+mime_guess = "2.0.5"

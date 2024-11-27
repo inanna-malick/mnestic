@@ -1,0 +1,1 @@
+This folder contains the built output assets for the worker "mnemnos-worker" generated at 2024-11-26T20:01:11.993Z.
