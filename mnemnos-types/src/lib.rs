@@ -34,8 +34,8 @@ impl<'a> From<&'a str> for PageName {
     }
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
-pub struct State {
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Default)]
+pub struct AppState {
     pub pages: HashMap<PageName, Page>,
 }
 
@@ -73,7 +73,7 @@ pub enum Action {
     },
 }
 
-impl Reducible for State {
+impl Reducible for AppState {
     type Action = Action;
 
     fn reduce(self: Rc<Self>, action: Self::Action) -> Rc<Self> {

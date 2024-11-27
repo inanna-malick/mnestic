@@ -6,3 +6,7 @@ assets = { directory = "./../mnemnos-wasm/dist" }
 [build]
 command = "cargo install -q worker-build && worker-build --release"
 
+
+[[r2_buckets]]
+binding = 'STORAGE' # must be a valid JavaScript variable name
+bucket_name = 'mnemnos-state'

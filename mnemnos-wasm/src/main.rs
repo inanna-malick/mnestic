@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::rc::Rc;
 
 use gloo::storage::{LocalStorage, Storage};
-use mnemnos_types::{Action, Page, PageName, State};
+use mnemnos_types::{Action, Page, PageName, AppState};
 use tera::Tera;
 use yew::prelude::*;
 
@@ -16,7 +16,7 @@ const KEY: &str = "yew.functiontodomvc.self";
 
 #[function_component(App)]
 fn app() -> Html {
-    let state = use_reducer(|| State {
+    let state = use_reducer(|| AppState {
         pages: LocalStorage::get(KEY).unwrap_or_else(|_| HashMap::new()),
     });
 
@@ -25,7 +25,7 @@ fn app() -> Html {
         LocalStorage::set(KEY, &state.clone().pages).expect("failed to set");
     });
 
-    fn make_callback<E, F>(state: &UseReducerHandle<State>, f: F) -> Callback<E>
+    fn make_callback<E, F>(state: &UseReducerHandle<AppState>, f: F) -> Callback<E>
     where
         F: Fn(E) -> Action + 'static,
     {
@@ -68,6 +68,9 @@ fn app() -> Html {
     let tera: Rc<Result<TeraWrapper, String>> =
         use_memo(state.pages.clone(), |pages| TeraWrapper::new(pages.clone()));
 
+
+    
+
     html! {
         <div class="container">
             <h1>{ "Pages" }</h1>
@@ -76,6 +79,8 @@ fn app() -> Html {
                     <HeaderInput {on_add} />
                 </div>
                 <label for="toggle-all" />
+                <button class={classes!("btn", "waves-effect", "waves-light")} onclick={|_| todo!()}>{"delete page"}</button>
+
             </div>
 
                 { for state.pages.iter().map(|(page_name, page)|
