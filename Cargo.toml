@@ -1,6 +1,7 @@
 [workspace]
 
-members = [ "mnemnos-types",
-    "mnemnos-wasm", "mnemnos-wasm-packed",
+members = [
+    "mnemnos-types",
+    "mnemnos-wasm",
     "mnemnos-worker"
 ]
