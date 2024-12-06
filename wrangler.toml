@@ -1,0 +1,18 @@
+name = "mnemnos-worker"
+main = "mnemnos-worker/build/worker/shim.mjs"
+compatibility_date = "2024-11-26"
+
+
+[assets]
+directory = "mnemnos-wasm/dist"
+
+[build]
+command = "./wrangler-build.sh"
+
+
+[[r2_buckets]]
+binding = 'STORAGE'
+bucket_name = 'mnemnos-state'
+
+[observability.logs]
+enabled = true

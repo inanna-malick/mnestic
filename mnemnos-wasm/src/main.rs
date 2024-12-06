@@ -22,7 +22,7 @@ const KEY: &str = "yew.functiontodomvc.self";
 
 #[function_component(App)]
 fn app() -> Html {
-    let fallback = html! {<div>{"Loading..."}</div>};
+    let fallback = html! {<div>{"Loading state..."}</div>};
 
     html! {
         <Suspense {fallback}>

@@ -1,9 +1,7 @@
 use std::rc::Rc;
 
 use serde_json::Value;
-use tera::Tera;
-use web_sys::wasm_bindgen::JsValue;
-use web_sys::{console, HtmlInputElement, MouseEvent};
+use web_sys::{HtmlInputElement, MouseEvent};
 use yew::events::{Event, FocusEvent, KeyboardEvent};
 use yew::prelude::*;
 use yew_autoprops::autoprops;
