@@ -10,8 +10,8 @@ use yew_autoprops::autoprops;
 
 use crate::components::value::{ValueInput, ValueView};
 use crate::hooks::use_bool_toggle::use_bool_toggle;
-use mnemnos_types::{Page, PageName, ValueName};
 use crate::TeraWrapper;
+use mnemnos_types::{Page, PageName, ValueName};
 
 #[autoprops]
 #[function_component(PageView)]
@@ -131,8 +131,6 @@ pub fn page_edit(
             }
         };
 
-
-
         let onkeypress = {
             let edit = on_edit.clone();
             let name = name.clone();
@@ -147,10 +145,8 @@ pub fn page_edit(
 
         let onmouseover = |e: MouseEvent| {
             let x = e.target_unchecked_into::<HtmlInputElement>();
-            x.focus()
-                .unwrap_or_default();
+            x.focus().unwrap_or_default();
         };
-
 
         // todo fix this later i guess
         // let onkeyup = |e: KeyboardEvent| {
@@ -163,13 +159,11 @@ pub fn page_edit(
         //     }
         // };
 
-
         // textarea.noscrollbars {
         // overflow: hidden;
         // width: 300px;
         // height: 100px;
         // }
-
 
         let id = format!("{}-edit-template", page_name.0);
 

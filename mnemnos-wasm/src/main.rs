@@ -1,9 +1,14 @@
 use std::collections::HashMap;
+use std::ops::Deref;
 use std::rc::Rc;
 
 use gloo::storage::{LocalStorage, Storage};
-use mnemnos_types::{Action, Page, PageName, AppState};
+use gloo_net::http::Request;
+use mnemnos_types::{Action, AppState, Page, PageName};
 use tera::Tera;
+use web_sys::console;
+use web_sys::wasm_bindgen::JsValue;
+use yew::platform::spawn_local;
 use yew::prelude::*;
 
 mod components;
@@ -11,14 +16,46 @@ mod hooks;
 
 use components::header_input::HeaderInput;
 use components::page::PageView;
+use yew::suspense::use_future;
 
 const KEY: &str = "yew.functiontodomvc.self";
 
 #[function_component(App)]
 fn app() -> Html {
-    let state = use_reducer(|| AppState {
-        pages: LocalStorage::get(KEY).unwrap_or_else(|_| HashMap::new()),
-    });
+    let fallback = html! {<div>{"Loading..."}</div>};
+
+    html! {
+        <Suspense {fallback}>
+        <LoadAndRun/>
+        </Suspense>
+    }
+}
+
+#[function_component(LoadAndRun)]
+fn load_and_run() -> HtmlResult {
+    let res = use_future(|| async {
+        let res = Request::get("/api/state")
+            .send()
+            .await?
+            .json::<AppState>()
+            .await?;
+
+
+        Ok::<AppState, gloo_net::Error>(res)
+    })?;
+    // .expect("failed unwrapping result of api call to get state");
+
+    let state = match *res {
+        Ok(ref res) => res.clone(),
+        Err(ref failure) => {
+            console::log_1(&JsValue::from_str(&failure.to_string())); // todo: something less janky
+            AppState {
+                pages: HashMap::new(),
+            }
+        }
+    };
+
+    let state = use_reducer(|| state);
 
     // Effect
     use_effect_with(state.clone(), |state| {
@@ -68,10 +105,20 @@ fn app() -> Html {
     let tera: Rc<Result<TeraWrapper, String>> =
         use_memo(state.pages.clone(), |pages| TeraWrapper::new(pages.clone()));
 
+    // {
+    //     use reqwasm::http::Request;
 
-    
+    //     let c = callback_future;
 
-    html! {
+    //     // Request::get(url)
+    //     //     .send()
+    //     //     .await
+    //     //     .unwrap();
+    // }
+
+    let state2 = state.clone();
+
+    Ok(html! {
         <div class="container">
             <h1>{ "Pages" }</h1>
             <div class="row">
@@ -79,7 +126,17 @@ fn app() -> Html {
                     <HeaderInput {on_add} />
                 </div>
                 <label for="toggle-all" />
-                <button class={classes!("btn", "waves-effect", "waves-light")} onclick={|_| todo!()}>{"delete page"}</button>
+                <button class={classes!("btn", "waves-effect", "waves-light")} onclick={move |_|
+                    {
+                        let state = state2.clone();
+                        spawn_local(async move {
+                    // let res = Request::post("/api/state").body(serde_json::to_value(state.borrow_mut()).unwrap() ).send().await;
+                    let res = Request::post("/api/state").json(
+                    state.deref() ).expect("failure sending json to api/state endpoint").send().await;
+                    console::log_1(&JsValue::from_str(&format!("save res: {:?}", res))); // todo: something less janky
+                })
+            }
+                }>{"save state to r2"}</button>
 
             </div>
 
@@ -97,7 +154,7 @@ fn app() -> Html {
                         />
                 }) }
         </div>
-    }
+    })
 }
 
 fn main() {
