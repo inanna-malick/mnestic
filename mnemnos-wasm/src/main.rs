@@ -1,11 +1,9 @@
 use std::collections::HashMap;
 use std::ops::Deref;
-use std::rc::Rc;
 
 use gloo::storage::{LocalStorage, Storage};
 use gloo_net::http::Request;
 use mnemnos_types::{Action, AppState, Page, PageName};
-use tera::Tera;
 use web_sys::console;
 use web_sys::wasm_bindgen::JsValue;
 use yew::platform::spawn_local;
@@ -39,7 +37,6 @@ fn load_and_run() -> HtmlResult {
             .await?
             .json::<AppState>()
             .await?;
-
 
         Ok::<AppState, gloo_net::Error>(res)
     })?;
@@ -85,38 +82,8 @@ fn load_and_run() -> HtmlResult {
         }
     });
 
-    let on_add_value = make_callback(&state, |(page_name, value_name, value)| Action::AddValue {
-        page_name,
-        value_name,
-        value,
-    });
-
-    let on_edit_value = make_callback(&state, |(page_name, value_name, value)| Action::EditValue {
-        page_name,
-        value_name,
-        value,
-    });
-
-    let on_remove_value = make_callback(&state, |(page_name, value_name)| Action::RemoveValue {
-        page_name,
-        value_name,
-    });
-
-    let tera: Rc<Result<TeraWrapper, String>> =
-        use_memo(state.pages.clone(), |pages| TeraWrapper::new(pages.clone()));
-
-    // {
-    //     use reqwasm::http::Request;
-
-    //     let c = callback_future;
-
-    //     // Request::get(url)
-    //     //     .send()
-    //     //     .await
-    //     //     .unwrap();
-    // }
-
     let state2 = state.clone();
+    let state3 = state.clone();
 
     Ok(html! {
         <div class="container">
@@ -147,10 +114,7 @@ fn load_and_run() -> HtmlResult {
                             page={page.clone()}
                             on_page_remove={&on_page_remove}
                             on_edit_template={&on_edit_template}
-                            on_add_value={&on_add_value}
-                            on_edit_value={&on_edit_value}
-                            on_remove_value={&on_remove_value}
-                            tera={&tera}
+                            state={state3.clone()}
                         />
                 }) }
         </div>
@@ -160,40 +124,3 @@ fn load_and_run() -> HtmlResult {
 fn main() {
     yew::Renderer::<App>::new().render();
 }
-
-#[derive(Clone, Debug)]
-struct TeraWrapper {
-    source: HashMap<PageName, Page>,
-    compiled: Tera,
-}
-
-impl TeraWrapper {
-    pub fn new(source: HashMap<PageName, Page>) -> Result<Self, String> {
-        let mut tera = Tera::default();
-        match tera.add_raw_templates(
-            source
-                .iter()
-                .map(|(k, v)| (k.0.clone(), v.template.clone())),
-        ) {
-            Ok(()) => Ok(Self {
-                source,
-                compiled: tera,
-            }),
-            Err(e) => Err(e.to_string()),
-        }
-    }
-
-    pub fn render(&self, page_name: &PageName, context: &tera::Context) -> Result<String, String> {
-        self.compiled
-            .render(&page_name.0, context)
-            .map_err(|e| e.to_string())
-    }
-}
-
-impl PartialEq for TeraWrapper {
-    fn eq(&self, other: &Self) -> bool {
-        self.source == other.source
-    }
-}
-
-impl Eq for TeraWrapper {}

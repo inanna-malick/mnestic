@@ -1,23 +1,9 @@
 use std::collections::HashMap;
 use std::rc::Rc;
 
+use comrak::{markdown_to_html, Options};
 use serde::{Deserialize, Serialize};
 use yew::prelude::*;
-
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash)]
-pub struct ValueName(pub String);
-
-impl From<String> for ValueName {
-    fn from(value: String) -> Self {
-        ValueName(value)
-    }
-}
-
-impl<'a> From<&'a str> for ValueName {
-    fn from(value: &'a str) -> Self {
-        ValueName(value.into())
-    }
-}
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub struct PageName(pub String);
@@ -41,8 +27,34 @@ pub struct AppState {
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 pub struct Page {
-    pub template: String,
-    pub values: HashMap<ValueName, serde_json::Value>,
+    pub markdown: String,
+}
+
+impl AppState {
+    pub fn render(&self, page_name: &PageName) -> Result<String, anyhow::Error> {
+        let page = self
+            .pages
+            .get(page_name)
+            .ok_or_else(|| anyhow::Error::msg("invalid page name reference"))?;
+
+        // tpdo use broken_link_callback to implement links between pages on site - no need to mutate ast
+        let inner = markdown_to_html(&page.markdown, &Options::default());
+
+        Ok(format!(
+            r#"
+        <!DOCTYPE html>
+            <html>
+            <head>
+            <title>{}</title>
+            </head>
+            <body>
+            {}
+            </body>
+        </html>
+        "#,
+            page_name.0, inner
+        ))
+    }
 }
 
 pub enum Action {
@@ -56,20 +68,6 @@ pub enum Action {
     EditTemplate {
         page_name: PageName,
         template: String,
-    },
-    AddValue {
-        page_name: PageName,
-        value_name: ValueName,
-        value: serde_json::Value,
-    },
-    RemoveValue {
-        page_name: PageName,
-        value_name: ValueName,
-    },
-    EditValue {
-        page_name: PageName,
-        value_name: ValueName,
-        value: serde_json::Value,
     },
 }
 
@@ -95,39 +93,7 @@ impl Reducible for AppState {
                 let mut pages = self.pages.clone();
                 pages
                     .entry(page_name)
-                    .and_modify(move |p| p.template = template);
-                Self { pages }.into()
-            }
-            Action::AddValue {
-                page_name,
-                value_name,
-                value,
-            } => {
-                let mut pages = self.pages.clone();
-                pages.entry(page_name).and_modify(move |p| {
-                    p.values.insert(value_name, value);
-                });
-                Self { pages }.into()
-            }
-            Action::RemoveValue {
-                page_name,
-                value_name,
-            } => {
-                let mut pages = self.pages.clone();
-                pages.entry(page_name).and_modify(move |p| {
-                    p.values.remove(&value_name);
-                });
-                Self { pages }.into()
-            }
-            Action::EditValue {
-                page_name,
-                value_name,
-                value,
-            } => {
-                let mut pages = self.pages.clone();
-                pages.entry(page_name).and_modify(move |p| {
-                    p.values.entry(value_name).and_modify(|v| *v = value);
-                });
+                    .and_modify(move |p| p.markdown = template);
                 Self { pages }.into()
             }
         }

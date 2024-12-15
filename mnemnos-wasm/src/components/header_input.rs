@@ -1,6 +1,3 @@
-use std::collections::HashMap;
-
-use serde_json::Value;
 use web_sys::HtmlInputElement;
 use yew::events::KeyboardEvent;
 use yew::prelude::*;
@@ -19,14 +16,10 @@ pub fn header_input(on_add: Callback<(PageName, Page)>) -> Html {
 
                 input.set_value("");
 
-                let mut initial_values = HashMap::new();
-                initial_values.insert("name".into(), Value::String("Inanna".to_string()));
-
                 on_add.emit((
                     page_name.into(),
                     Page {
-                        template: "Hello {{ name }}".to_string(),
-                        values: initial_values,
+                        markdown: "some markdown here".to_string(),
                     },
                 ));
             }
