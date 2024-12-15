@@ -1,3 +1,4 @@
+use web_sys::wasm_bindgen::JsCast;
 use web_sys::{HtmlInputElement, MouseEvent};
 use yew::events::{Event, KeyboardEvent};
 use yew::prelude::*;
@@ -57,14 +58,19 @@ pub fn page(
             <br/>
             <div class="divider"></div>
             <br/>
-            <div class={classes!("col", "s4")} >
-                <div style="white-space: pre-wrap"  ondblclick={move |_| edit_toggle.clone().toggle()}>
-                    { &page.markdown }
-                </div>
-                <br/>
-                <div class="divider"></div>
-                <br/>
-                <TemplateEditView page_name={page_name.clone()} page={page.clone()} on_edit={on_edit_t} editing={is_editing} />
+            <div class={classes!("col", "s6")} >
+                { if is_editing {
+                    html!{
+                        <TemplateEditView page_name={page_name.clone()} page={page.clone()} on_edit={on_edit_t} />
+                    }
+                } else {
+                    html!{
+                        <div style="white-space: pre-wrap"  ondblclick={move |_| edit_toggle.clone().toggle()}>
+                            { &page.markdown }
+                        </div>
+                    }
+                }
+            }
             </div>
 
             <div class={classes!("col", "s6")} style={"height:100%;"}  >
@@ -76,76 +82,67 @@ pub fn page(
 
 #[autoprops]
 #[function_component(TemplateEditView)]
-pub fn page_edit(
-    page_name: &PageName,
-    page: &Page,
-    on_edit: Callback<(PageName, String)>,
-    editing: bool,
-) -> Html {
-    if editing {
-        let name = page_name.clone();
+pub fn page_edit(page_name: &PageName, page: &Page, on_edit: Callback<(PageName, String)>) -> Html {
+    let name = page_name.clone();
 
-        let target_input_value = |e: &Event| {
-            let input: HtmlInputElement = e.target_unchecked_into();
-            input.value()
-        };
+    let target_input_value = |e: &Event| {
+        let input: HtmlInputElement = e.target_unchecked_into();
+        input.value()
+    };
 
-        let onkeypress = {
-            let edit = on_edit.clone();
-            let name = name.clone();
+    let onkeypress = {
+        let edit = on_edit.clone();
+        let name = name.clone();
 
-            move |e: KeyboardEvent| {
-                if e.key() == "Enter" {
-                    let value = target_input_value(&e);
-                    edit.emit((name.clone(), value))
-                }
+        move |e: KeyboardEvent| {
+            if e.key() == "Enter" && e.shift_key() {
+                let value = target_input_value(&e);
+                edit.emit((name.clone(), value))
             }
-        };
-
-        let onmouseover = |e: MouseEvent| {
-            let x = e.target_unchecked_into::<HtmlInputElement>();
-            x.focus().unwrap_or_default();
-        };
-
-        // todo fix this later i guess
-        // let onkeyup = |e: KeyboardEvent| {
-        //     console::log_1(&JsValue::from_str("KEYUP"));
-        //     let x = e.target_unchecked_into::<HtmlInputElement>();
-        //     if (x.scroll_height() > x.client_height()) {
-        //         let style = x.style();
-
-        //         style.set_property("height", &format!("{} + px", x.scroll_height())).unwrap();
-        //     }
-        // };
-
-        // textarea.noscrollbars {
-        // overflow: hidden;
-        // width: 300px;
-        // height: 100px;
-        // }
-
-        let id = format!("{}-edit-template", page_name.0);
-
-        html! {
-            <div>
-                <i class="material-icons prefix">{"mode_edit"}</i>
-                <textarea
-                    id={id.clone()}
-                    class="materialize-textarea"
-                    rows={"10"}
-                    {onmouseover}
-                    // {onkeyup}
-                    // {onblur}
-                    {onkeypress}
-                    value={page.markdown.clone()}
-                >
-
-                </textarea>
-                <label for={id}>{"Template Contents"}</label>
-            </div>
         }
-    } else {
-        html! { <input type="hidden" /> }
+    };
+
+    let on_save = |id: String| {
+        let edit = on_edit.clone();
+        let name = name.clone();
+
+        move |_| {
+            let document = web_sys::window().unwrap().document().unwrap();
+
+            let element = document.get_element_by_id(&id).unwrap();
+            let value: HtmlInputElement = element.unchecked_into();
+            edit.emit((name.clone(), value.value()))
+        }
+    };
+
+    let onmouseover = |e: MouseEvent| {
+        let x = e.target_unchecked_into::<HtmlInputElement>();
+        x.focus().unwrap_or_default();
+    };
+
+    let id = format!("{}-edit-template", page_name.0);
+
+    html! {
+        <div>
+            <i class="material-icons prefix">{"mode_edit"}</i>
+            <textarea
+                id={id.clone()}
+                class="materialize-textarea"
+                rows={"10"}
+                {onmouseover}
+                // {onkeyup}
+                // {onblur}
+                {onkeypress}
+                value={page.markdown.clone()}
+            >
+
+            </textarea>
+            <label for={id.clone()}>{"editing markdown"}</label>
+
+
+            <button class={classes!("btn", "waves-effect", "waves-light")} onclick={on_save(id.clone())}>{"save changes"}</button>
+
+        </div>
     }
 }
 
@@ -158,7 +155,9 @@ pub fn page(page_name: &PageName, state: &UseReducerHandle<AppState>) -> Html {
     match state.render(page_name) {
         Ok(rendered) => {
             html! {
-                <iframe srcdoc={rendered} style={"width:100%;height:100%;"} ></iframe>
+                <div class="resizer">
+                <iframe class="resized" srcdoc={rendered}  ></iframe>
+                </div>
             }
         }
         Err(e) => {

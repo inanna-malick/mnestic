@@ -42,16 +42,16 @@ impl AppState {
 
         Ok(format!(
             r#"
-        <!DOCTYPE html>
-            <html>
-            <head>
-            <title>{}</title>
-            </head>
-            <body>
-            {}
-            </body>
-        </html>
-        "#,
+            <!DOCTYPE html>
+                <html>
+                <head>
+                <title>{}</title>
+                </head>
+                <body>
+                {}
+                </body>
+            </html>
+            "#,
             page_name.0, inner
         ))
     }

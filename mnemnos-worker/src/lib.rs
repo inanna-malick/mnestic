@@ -4,8 +4,8 @@ use axum::{
     extract::Path,
     extract::State,
     http::StatusCode,
-    response::IntoResponse,
     response::Html,
+    response::IntoResponse,
     routing::{get, post},
     Json, Router,
 };
@@ -26,10 +26,11 @@ async fn fetch(
 static KEY: &str = "mnestic";
 
 fn router(env: Env) -> Router {
-    let api = Router::new()
-        .route("/state", post(set_state).get(get_state))
-        ;
-    Router::new().nest("/api", api).route("/assets/*path", get(assets)).with_state(env)
+    let api = Router::new().route("/state", post(set_state).get(get_state));
+    Router::new()
+        .nest("/api", api)
+        .route("/assets/*path", get(assets))
+        .with_state(env)
 }
 
 pub enum MnemnosError {
